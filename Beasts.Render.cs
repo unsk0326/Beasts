@@ -81,7 +81,7 @@ public partial class Beasts
     {
         if (beastName.Contains("Vivid"))
         {
-            return new Color(255, 250, 0);
+            return new Color(255, 167, 0);
         }
 
         if (beastName.Contains("Wild"))
