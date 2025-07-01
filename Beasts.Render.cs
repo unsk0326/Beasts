@@ -5,7 +5,9 @@ using System.Linq;
 using Beasts.Data;
 using Beasts.ExileCore;
 using ExileCore.PoEMemory.Components;
+using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
+using ExileCore.Shared.Helpers;
 using ImGuiNET;
 using SharpDX;
 using Vector2 = System.Numerics.Vector2;
@@ -22,8 +24,34 @@ public partial class Beasts
         DrawBeastsWindow();
     }
 
+    private static RectangleF Get64DirectionsUV(double phi, double distance, int rows)
+    {
+        phi += Math.PI * 0.25; // fix rotation due to projection
+        if (phi > 2 * Math.PI) phi -= 2 * Math.PI;
+
+        var xSprite = (float)Math.Round(phi / Math.PI * 32);
+        if (xSprite >= 64) xSprite = 0;
+
+        float ySprite = distance > 60 ? distance > 120 ? 2 : 1 : 0;
+        var x = xSprite / 64;
+        float y = 0;
+        if (rows > 0)
+        {
+            y = ySprite / rows;
+            return new RectangleF(x, y, (xSprite + 1) / 64 - x, (ySprite + 1) / rows - y);
+        }
+
+        return new RectangleF(x, y, (xSprite + 1) / 64 - x, 1);
+    }
     private void DrawInGameBeasts()
     {
+        var scale = 1.6f;
+        var height = ImGui.GetTextLineHeight() * scale;
+        var margin = height / scale / 4;
+        var lines = 0;
+        var origin = (GameController.Window.GetWindowRectangleTimeCache with { Location = SharpDX.Vector2.Zero }).Center
+            .Translate(0 - 96, 0);
+
         foreach (var trackedBeast in _trackedBeasts
                      .Select(beast => new { Positioned = beast.Value.GetComponent<Positioned>(), beast.Value.Metadata })
                      .Where(beast => beast.Positioned != null))
@@ -32,10 +60,20 @@ public partial class Beasts
 
             if (!Settings.Beasts.Any(b => b.Path == beast.Path)) continue;
             var pos = GameController.IngameState.Data.ToWorldWithTerrainHeight(trackedBeast.Positioned.GridPosition);
-            Graphics.DrawText(beast.DisplayName, GameController.IngameState.Camera.WorldToScreen(pos), Color.White,
+            Graphics.DrawText(beast.DisplayName, GameController.IngameState.Camera.WorldToScreen(pos), Color.DarkRed,
                 FontAlign.Center);
 
-            DrawFilledCircleInWorldPosition(pos, 50, GetSpecialBeastColor(beast.DisplayName));
+            DrawFilledCircleInWorldPosition(pos, 300, GetSpecialBeastColor(beast.DisplayName));
+
+//seong.lee mod
+            var delta = trackedBeast.Positioned.GridPos - GameController.Player.GridPos;
+            var distance = delta.GetPolarCoordinates(out var phi);
+            var rectDirection = new RectangleF(origin.X - margin - height / 2,
+                        origin.Y - margin / 2 - height - lines * height, height, height);
+            var rectUV = Get64DirectionsUV(phi, distance, 3);
+            lines++;
+            Graphics.DrawText(beast.DisplayName, new Vector2(origin.X + height / 2, origin.Y - lines * height), GetSpecialBeastColor(beast.DisplayName));
+            Graphics.DrawImage("Direction-Arrow.png", rectDirection, rectUV, GetSpecialBeastColor(beast.DisplayName));
         }
     }
 
@@ -83,11 +121,12 @@ public partial class Beasts
 
             Graphics.DrawBox(beast.GetClientRect(), new Color(0, 0, 0, 0.5f));
             Graphics.DrawFrame(beast.GetClientRect(), Color.White, 2);
-            Graphics.DrawText(beastMetadata.DisplayName, center, Color.White, FontAlign.Center);
+            Graphics.DrawText(beastMetadata.DisplayName, center, Color.Orange, FontAlign.Center);
 
             var text = Settings.BeastPrices[beastMetadata.DisplayName].ToString(CultureInfo.InvariantCulture) + "c";
             var textPos = center + new Vector2(0, 20);
-            Graphics.DrawText(text, textPos, Color.White, FontAlign.Center);
+            Graphics.DrawText(text, textPos, Color.Orange, FontAlign.Center);
+
         }
     }
 

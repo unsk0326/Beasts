@@ -24,4 +24,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
+<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<Exec Command="&quot;C:\Program Files\7-Zip\7z.exe&quot; x &quot;Assets.zip&quot; -y -o$(OutputPath)" />
+</Target>
 </Project>

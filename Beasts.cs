@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Beasts.Api;
@@ -13,7 +14,13 @@ namespace Beasts;
 public partial class Beasts : BaseSettingsPlugin<BeastsSettings>
 {
     private readonly Dictionary<long, Entity> _trackedBeasts = new();
-
+    public override bool Initialise()
+    {
+        base.Initialise();
+        Graphics.InitImage(Path.Combine(DirectoryFullName, "textures\\Direction-Arrow.png").Replace('\\', '/'), false);
+        Graphics.InitImage(Path.Combine(DirectoryFullName, "textures\\back.png").Replace('\\', '/'), false);
+        return true;
+    }
     public override void OnLoad()
     {
         Settings.FetchBeastPrices.OnPressed += async () => await FetchPrices();
